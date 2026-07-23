@@ -1,7 +1,10 @@
 # Manta Ray
 
 <p align="center">
-  <img src="Manta_logo.png" alt="Manta Ray logo" width="460"/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="Manta_logo_white.png">
+    <img src="Manta_logo_square.png" alt="Manta Ray" width="300"/>
+  </picture>
 </p>
 
 <p align="center">
@@ -138,7 +141,7 @@ Score = 10·log10(Σ [10^(dBi/10) × area_i / dist_i²])
 
 ### Manta Contours
 
-Marching-triangles isodecibel contour extraction. Connect `{50,55,60,65,70,75}` to Levels for a full contour map. Output is a GH tree — one branch per level.
+Marching-triangles isodecibel contour extraction. Connect `{50,55,60,65,70,75}` to Levels for a full contour map. Output is a GH tree — one branch per level. Each level is previewed in its **dB colour** (blue→red), matching the Noise mesh scale.
 
 ---
 
@@ -158,7 +161,7 @@ Particles advect through a curl-noise velocity field at ~60 fps. Curl noise is d
 v(x,t) = V_wind + curl( N(x/scale + t·0.1, y/scale, z/scale) ) × turbulence
 ```
 
-Integrated with **RK2 (midpoint method)**. Golden-ratio phase offsets spread particles evenly.
+Integrated with **RK2 (midpoint method)**. Golden-ratio phase offsets spread particles evenly. Streamlines **deflect around the analysis mesh** — near a surface the inward-flowing component is cancelled and particles slide around the geometry (a stylised obstacle field, not a CFD solve). The baked `Streamlines` output carries the same deflected paths.
 
 | Input | Default | Description |
 |-------|---------|-------------|
@@ -202,8 +205,8 @@ Spherical pressure wavefronts from noise sources. Each source emits concentric r
 |-------|---------|-------------|
 | S – Sources | — | From Manta Source |
 | dB – Levels | — | From Manta Source |
-| c – Wave Speed | 343 | Speed of sound (m/s) |
-| Sc – Scale | 0.05 | Visual scale |
+| c – Wave Speed | 343 | Speed of sound (m/s) — scales animation rate |
+| Sc – Scale | 0.75 | Ring reach as a fraction of the source spread (auto-sizes to your model) |
 | R – Rings | 5 | Wavefront rings per source |
 | On | true | Animate live in the viewport (off = static outputs only, no redraw loop) |
 

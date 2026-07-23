@@ -11,6 +11,9 @@ namespace Manta
 {
     public class MantaContoursComponent : GH_Component
     {
+        private readonly List<Curve> _dispCurves = new List<Curve>();
+        private readonly List<Color> _dispColors = new List<Color>();
+
         public MantaContoursComponent()
             : base("Contours", "Contours",
                    "Extract isodecibel contour polylines — one branch per level in the output tree.\n" +
@@ -43,6 +46,9 @@ namespace Manta
 
         protected override void SolveInstance(IGH_DataAccess DA)
         {
+            _dispCurves.Clear();
+            _dispColors.Clear();
+
             Mesh    mesh      = null;
             var     faceDbL   = new List<double>();
             var     targetLvl = new List<double>();
@@ -66,9 +72,16 @@ namespace Manta
             var        outLvls  = new List<double>();
             int        total    = 0;
 
+            // Colour scale for the contours — same blue→red range as the Manta Noise mesh
+            double dMin = double.MaxValue, dMax = double.MinValue;
+            foreach (double d in faceDb) { if (d < dMin) dMin = d; if (d > dMax) dMax = d; }
+            if (dMin > dMax) { dMin = 0; dMax = 1; }
+            if (Math.Abs(dMax - dMin) < 1e-6) dMax = dMin + 1;
+
             for (int li = 0; li < targetLvl.Count; li++)
             {
                 double level    = targetLvl[li];
+                Color  col      = Acoustics.DbToColor(level, dMin, dMax);
                 var    contours = ContourAlgo.March(mesh, vertexDb, level);
                 var    path     = new GH_Path(li);
 
@@ -76,7 +89,12 @@ namespace Manta
                 {
                     if (poly.Count < 2) continue;
                     var nc = poly.ToNurbsCurve();
-                    if (nc != null) { tree.Append(new GH_Curve(nc), path); total++; }
+                    if (nc != null)
+                    {
+                        tree.Append(new GH_Curve(nc), path); total++;
+                        _dispCurves.Add(nc);
+                        _dispColors.Add(col);
+                    }
                 }
                 outLvls.Add(level);
             }
@@ -88,6 +106,13 @@ namespace Manta
             DA.SetDataTree(0, tree);
             DA.SetDataList(1, outLvls);
             DA.SetData    (2, total);
+        }
+
+        // Draw each level's contours in its dB colour (blue→red), matching the mesh.
+        public override void DrawViewportWires(IGH_PreviewArgs args)
+        {
+            for (int i = 0; i < _dispCurves.Count; i++)
+                args.Display.DrawCurve(_dispCurves[i], _dispColors[i], 3);
         }
     }
 }

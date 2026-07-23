@@ -16,7 +16,8 @@ namespace Manta
 
         volatile Point3d[] _sources;
         volatile double[]  _levels;
-        double    _waveSpeed;
+        double    _maxRadius;
+        double    _ringRate;
         int       _rings;
         BoundingBox _bbox;
 
@@ -36,7 +37,7 @@ namespace Manta
             p.AddPointParameter  ("Sources",    "S",  "Noise source points (from Manta Source)",       GH_ParamAccess.list);
             p.AddNumberParameter ("Levels",     "dB", "dB levels per source (from Manta Source)",       GH_ParamAccess.list);
             p.AddNumberParameter ("Wave Speed", "c",  "Speed of sound in m/s (default 343)",         GH_ParamAccess.item, 343.0);
-            p.AddNumberParameter ("Scale",      "Sc", "Visual scale — shrinks radius for display",   GH_ParamAccess.item, 0.05);
+            p.AddNumberParameter ("Scale",      "Sc", "Ring reach as a fraction of the source spread (auto-sizes to your model)", GH_ParamAccess.item, 0.75);
             p.AddIntegerParameter("Rings",      "R",  "Wavefront rings per source",                  GH_ParamAccess.item, 5);
             p.AddBooleanParameter("On",         "On", "Animate live in the viewport (off = compute outputs only, no 60 fps redraw loop)", GH_ParamAccess.item, true);
             for (int i = 0; i < 6; i++) p[i].Optional = true;
@@ -52,7 +53,7 @@ namespace Manta
         {
             var   srcList  = new List<Point3d>();
             var   lvlList  = new List<double>();
-            double speed   = 343, sc = 0.05;
+            double speed   = 343, sc = 0.75;
             int    rings   = 5;
             bool   on      = true;
 
@@ -68,13 +69,17 @@ namespace Manta
 
             _sources   = srcList.ToArray();
             _levels    = lvlList.ToArray();
-            _waveSpeed = Math.Max(1, speed) * Math.Max(0.001, sc);
             _rings     = Math.Max(1, Math.Min(20, rings));
 
-            // Compute bbox from sources
+            // Size the wavefronts relative to the source cloud so they stay visible
+            // at any model scale/units. Sc = ring reach as a fraction of the spread.
             var bb = new BoundingBox(_sources);
+            double span = bb.Diagonal.Length;
             bb.Inflate(bb.Diagonal.Length * 0.5 + 1);
             _bbox = bb;
+            if (span < 1e-6) span = bb.Diagonal.Length;       // single-source fallback
+            _maxRadius = span * Math.Max(0.01, sc);
+            _ringRate  = 0.7 * Math.Max(0.1, speed) / 343.0;  // cycles/sec, gently scaled by c
 
             DA.SetDataList(0, lvlList);
             DA.SetDataList(1, srcList);
@@ -113,7 +118,8 @@ namespace Manta
             if (srcs == null || srcs.Length == 0) return;
 
             double t      = (DateTime.Now - _start).TotalSeconds;
-            double cVis   = _waveSpeed;
+            double maxR   = _maxRadius;
+            double rate   = _ringRate;
             int    nRings = _rings;
 
             for (int si = 0; si < srcs.Length; si++)
@@ -121,18 +127,19 @@ namespace Manta
                 var   src   = srcs[si];
                 double level = si < lvls.Length ? lvls[si] : 80;
 
-                // Normalise level to visual intensity (60–100 dB range)
-                double intensity = Math.Max(0, Math.Min(1, (level - 50) / 50.0));
+                // Normalise level to visual intensity, with a floor so quiet
+                // sources stay visible.
+                double intensity = Math.Max(0.3, Math.Min(1, (level - 40) / 50.0));
 
                 for (int ri = 0; ri < nRings; ri++)
                 {
                     // Each ring is offset in time so they appear to march outward
-                    double ringT   = (t + (double)ri / nRings) % 1.0;
-                    double radius  = ringT * cVis * 2.0;
+                    double ringT   = (t * rate + (double)ri / nRings) % 1.0;
+                    double radius  = ringT * maxR;
 
                     // Fade out as ring expands and as it ages
                     double fade = (1.0 - ringT) * intensity;
-                    int    alpha = (int)(200 * fade);
+                    int    alpha = (int)(255 * fade);
                     if (alpha < 5) continue;
 
                     // Colour: high level = warm (amber-red), low = cool (blue-cyan)
@@ -155,7 +162,7 @@ namespace Manta
                 // Source pulse: bright core that beats with the rings
                 double pulse   = 0.5 + 0.5 * Math.Sin(t * Math.PI * 2.0);
                 int    pAlpha  = (int)(180 + 75 * pulse);
-                double coreR   = cVis * 0.04 * (1 + 0.3 * pulse);
+                double coreR   = maxR * 0.03 * (1 + 0.3 * pulse);
                 var    corePl  = new Plane(src, Vector3d.ZAxis);
                 args.Display.DrawCircle(new Circle(corePl, coreR),
                     Color.FromArgb(pAlpha, 255, 220, 80), 3);

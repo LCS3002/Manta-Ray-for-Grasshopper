@@ -17,10 +17,7 @@ namespace Manta
 
         // Set once per SolveInstance — read-only by animation thread
         volatile Point3d[] _seeds;
-        Vector3d  _windDir;
         double    _windSpeed;
-        double    _turbulence;
-        double    _scale;
         BoundingBox _bbox;
         int       _trailSteps;
 
@@ -29,7 +26,7 @@ namespace Manta
 
         public MantaWindComponent()
             : base("Wind", "Wind",
-                   "Animated wind streamlines — particles advect through a curl-noise velocity field.\n" +
+                   "Animated wind streamlines — particles advect through a curl-noise field and deflect around the mesh.\n" +
                    "Set Rhino viewport to Perspective for best effect.\n" +
                    "Formula: v = V_wind + curl(N(x/scale + t·0.1, y/scale, z/scale)) × turbulence",
                    "Manta", "Environment")
@@ -83,26 +80,29 @@ namespace Manta
             dir.Unitize();
 
             // Store for animation thread
-            _windDir    = dir;
             _windSpeed  = speed;
-            _turbulence = turb;
-            _scale      = scale;
             _trailSteps = trail;
-            _bbox       = mesh.GetBoundingBox(true);
+            _bbox            = mesh.GetBoundingBox(true);
+            double influence = _bbox.Diagonal.Length * 0.12;   // deflection reach around the mesh
             _bbox.Inflate(_bbox.Diagonal.Length * 0.3);
-            _seeds      = MantaMath.SeedParticles(_bbox, dir, nPart, seed);
+            _seeds           = MantaMath.SeedParticles(_bbox, dir, nPart, seed);
 
-            // Bake a static streamline snapshot for the curve output
-            double dt  = _bbox.Diagonal.Length / (speed * 40);
+            // Normals are needed for mesh-aware deflection
+            if (mesh.Normals.Count != mesh.Vertices.Count) mesh.Normals.ComputeNormals();
+            bool meshClosed = mesh.IsClosed;
+
+            // Bake deflected streamlines — these wrap around the geometry.
+            // Path shape is independent of Speed (Speed only sets playback rate).
+            double dt  = _bbox.Diagonal.Length / 240.0;
             var    sls = new Polyline[nPart];
             for (int i = 0; i < nPart; i++)
             {
                 var poly = new Polyline();
                 var pt   = _seeds[i];
-                for (int s2 = 0; s2 < trail * 4; s2++)
+                for (int s2 = 0; s2 < 300; s2++)
                 {
                     poly.Add(pt);
-                    pt = MantaMath.Advect(pt, dir, turb, scale, 0, dt);
+                    pt = MantaMath.Advect(mesh, meshClosed, pt, dir, turb, scale, 0, dt, influence);
                     if (!_bbox.Contains(pt)) break;
                 }
                 sls[i] = poly;
@@ -155,60 +155,39 @@ namespace Manta
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
             if (!_animate) return;
-            var    seeds  = _seeds;
-            if (seeds == null) return;
-
-            var    dir    = _windDir;
-            double speed  = _windSpeed;
-            double turb   = _turbulence;
-            double sc     = _scale;
-            var    bbox   = _bbox;
-            int    trail  = _trailSteps;
+            var    streams = _streamlines;
+            if (streams == null) return;
 
             double t     = (DateTime.Now - _start).TotalSeconds;
-            double bboxL = bbox.Diagonal.Length;
-            double dt    = bboxL / (speed * 40);
+            double speed = _windSpeed;
+            int    trail = _trailSteps;
 
-            for (int i = 0; i < seeds.Length; i++)
+            for (int i = 0; i < streams.Length; i++)
             {
-                // Phase offset so particles spread along the path
-                double phase = (i * 0.618033988) % 1.0; // golden ratio spacing
-                double tOff  = (t * speed * 0.07 + phase) % 1.0;
+                var sl = streams[i];
+                if (sl == null || sl.Count < 2) continue;
+                int n = sl.Count;
 
-                // Start particle at seed position, offset downstream by tOff
-                Point3d head = seeds[i] + dir * (tOff * bboxL * 0.8);
+                // Faint full streamline — shows the flow wrapping the geometry
+                args.Display.DrawPolyline(sl, Color.FromArgb(26, 80, 200, 210), 1);
 
-                // Wrap back if outside bbox
-                int wrap = 0;
-                while (!bbox.Contains(head) && wrap++ < 3)
-                    head = head - dir * bboxL * 0.8;
+                // A soft bright streak glides along the streamline (no head dot,
+                // fades at both ends so it reads as flowing air, not a comet).
+                double phase = (i * 0.618033988) % 1.0;            // golden-ratio spacing
+                double u     = (t * speed * 0.03 + phase) % 1.0;    // 0..1 along the path
+                int    hi    = (int)(u * (n - 1));
 
-                // Build trail by back-integrating
-                var trail_pts = new Point3d[trail];
-                trail_pts[0] = head;
-                double simT = t * speed * 0.07 + phase;
-                for (int s = 1; s < trail; s++)
+                for (int s = 0; s < trail; s++)
                 {
-                    trail_pts[s] = MantaMath.Advect(trail_pts[s-1], dir, turb, sc,
-                                                    -simT - s*dt*speed*0.3, -dt);
+                    int a = hi - s, b = a - 1;
+                    if (b < 0) break;
+                    double f      = (double)s / trail;              // 0 at lead → 1 at tail
+                    double bright = Math.Sin((1.0 - f) * Math.PI);  // peaks mid-streak, ~0 at both ends
+                    int    alpha  = (int)(235 * bright);
+                    if (alpha < 6) continue;
+                    var    col    = Color.FromArgb(alpha, 130, (int)(205 + 45 * bright), 255);
+                    args.Display.DrawLine(sl[a], sl[b], col, bright > 0.55 ? 3 : 2);
                 }
-
-                // Draw trail segments with fading colour
-                for (int s = 0; s < trail - 1; s++)
-                {
-                    double frac  = 1.0 - (double)s / trail;
-                    int    alpha = (int)(220 * frac * frac);
-                    int    blue  = (int)(255 * frac);
-                    int    green = (int)(210 * frac);
-                    var    col   = Color.FromArgb(alpha, 80, green, blue);
-                    args.Display.DrawLine(trail_pts[s], trail_pts[s+1], col, 1);
-                }
-
-                // Bright head dot
-                if (bbox.Contains(trail_pts[0]))
-                    args.Display.DrawPoint(trail_pts[0],
-                        Rhino.Display.PointStyle.Circle, 3,
-                        Color.FromArgb(220, 160, 240, 255));
             }
         }
 

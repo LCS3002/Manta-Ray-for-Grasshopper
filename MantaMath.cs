@@ -78,6 +78,51 @@ namespace Manta
             return pt + k2 * dt;
         }
 
+        // ── Mesh-aware wind: deflect the flow around the geometry ─────────────
+        // Near the surface, cancel any velocity heading INTO the mesh and add an
+        // outward push, so particles slide around the obstacle instead of through.
+        public static Vector3d WindVelocity(Mesh mesh, bool meshClosed, Point3d pt,
+                                            Vector3d baseWind, double turbulence,
+                                            double scale, double time, double influence)
+        {
+            Vector3d v = WindVelocity(pt, baseWind, turbulence, scale, time);
+            if (mesh == null || influence <= 1e-9) return v;
+
+            MeshPoint mp = mesh.ClosestMeshPoint(pt, influence * 1.5);
+            if (mp == null) return v;
+
+            Point3d cp = mp.Point;
+            double  d  = pt.DistanceTo(cp);
+            if (d >= influence) return v;
+
+            // Surface normal at the closest point (fall back to the offset vector)
+            Vector3d n;
+            try { var nf = mesh.NormalAt(mp); n = new Vector3d(nf.X, nf.Y, nf.Z); }
+            catch { n = pt - cp; }
+            if (!n.Unitize()) { n = pt - cp; if (!n.Unitize()) n = Vector3d.ZAxis; }
+
+            // Push outward from a solid, or to the particle's own side of a façade
+            Vector3d away = pt - cp;
+            Vector3d push = meshClosed ? n : (away * n >= 0 ? n : -n);
+
+            double spd = baseWind.Length; if (spd < 1e-6) spd = 1.0;
+            double w   = 1.0 - d / influence;          // 0 at edge of influence → 1 at surface
+
+            double into = v * push;                     // < 0  ⇒ flowing toward the surface
+            if (into < 0) v -= into * push;             // cancel inward flow ⇒ slides tangentially
+            v += push * (w * w * spd * 1.3);            // repel outward, strongest at the surface
+            return v;
+        }
+
+        public static Point3d Advect(Mesh mesh, bool meshClosed, Point3d pt, Vector3d baseWind,
+                                     double turbulence, double scale, double time,
+                                     double dt, double influence)
+        {
+            Vector3d k1 = WindVelocity(mesh, meshClosed, pt,             baseWind, turbulence, scale, time,        influence);
+            Vector3d k2 = WindVelocity(mesh, meshClosed, pt + k1*(dt/2), baseWind, turbulence, scale, time + dt/2, influence);
+            return pt + k2 * dt;
+        }
+
         // ── Particle seed: upstream face of bounding box ─────────────────────
         public static Point3d[] SeedParticles(BoundingBox bbox, Vector3d windDir,
                                               int count, int seed)
