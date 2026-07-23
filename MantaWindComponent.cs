@@ -18,7 +18,6 @@ namespace Manta
         // Set once per SolveInstance — read-only by animation thread
         volatile Point3d[] _seeds;
         double    _windSpeed;
-        BoundingBox _bbox;
         int       _trailSteps;
 
         // ── Baked streamline output (for curve output) ────────────────────────
@@ -82,28 +81,31 @@ namespace Manta
             // Store for animation thread
             _windSpeed  = speed;
             _trailSteps = trail;
-            _bbox            = mesh.GetBoundingBox(true);
-            double influence = _bbox.Diagonal.Length * 0.12;   // deflection reach around the mesh
-            _bbox.Inflate(_bbox.Diagonal.Length * 0.3);
-            _seeds           = MantaMath.SeedParticles(_bbox, dir, nPart, seed);
+
+            BoundingBox box       = mesh.GetBoundingBox(true);
+            double      diag      = box.Diagonal.Length;
+            if (diag < 1e-9) diag = 1.0;
+            double      influence = diag * 0.12;               // deflection reach around the mesh
+            _seeds                = MantaMath.SeedParticles(box, dir, nPart, seed);
 
             // Normals are needed for mesh-aware deflection
             if (mesh.Normals.Count != mesh.Vertices.Count) mesh.Normals.ComputeNormals();
             bool meshClosed = mesh.IsClosed;
 
-            // Bake deflected streamlines — these wrap around the geometry.
-            // Path shape is independent of Speed (Speed only sets playback rate).
-            double dt  = _bbox.Diagonal.Length / 240.0;
-            var    sls = new Polyline[nPart];
+            // Bake deflected streamlines — particles seed upstream, flow through the
+            // scene and deflect around the geometry. Fixed step count so every path is
+            // full length (Speed only drives playback, not the shape).
+            const int steps = 220;
+            double    dt    = diag / 200.0;
+            var       sls   = new Polyline[nPart];
             for (int i = 0; i < nPart; i++)
             {
                 var poly = new Polyline();
                 var pt   = _seeds[i];
-                for (int s2 = 0; s2 < 300; s2++)
+                for (int s2 = 0; s2 < steps; s2++)
                 {
                     poly.Add(pt);
                     pt = MantaMath.Advect(mesh, meshClosed, pt, dir, turb, scale, 0, dt, influence);
-                    if (!_bbox.Contains(pt)) break;
                 }
                 sls[i] = poly;
             }
