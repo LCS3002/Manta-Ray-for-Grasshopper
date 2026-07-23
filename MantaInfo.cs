@@ -49,7 +49,7 @@ namespace Manta
         public override string Description   => "Environmental analysis for Grasshopper — acoustic noise, animated wind, solar path, pressure waves. One plugin, all physics.";
         public override Guid   Id            => new Guid("A1B2C3D4-E5F6-4890-8BCD-EF1234567891");
         public override string AuthorName    => "LCS3002";
-        public override string AuthorContact => "https://github.com/LCS3002/Manta-Grasshopper";
+        public override string AuthorContact => "https://github.com/LCS3002/Manta-Ray-for-Grasshopper";
         public override Bitmap Icon          => MantaIcons.Manta48;
     }
 }

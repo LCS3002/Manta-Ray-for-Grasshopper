@@ -216,8 +216,8 @@ Spherical pressure wavefronts from noise sources. Each source emits concentric r
 Requirements: .NET SDK, Rhino 8
 
 ```bat
-git clone https://github.com/LCS3002/Manta-Grasshopper
-cd Manta-Grasshopper
+git clone https://github.com/LCS3002/Manta-Ray-for-Grasshopper
+cd Manta-Ray-for-Grasshopper
 build.bat
 ```
 
