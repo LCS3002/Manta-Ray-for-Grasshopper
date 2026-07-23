@@ -2,7 +2,7 @@
 cd /d "%~dp0"
 
 echo.
-echo  Manta  --  Environmental Analysis for Grasshopper
+echo  Manta Ray  --  Environmental Analysis for Grasshopper
 echo  --------------------------------------------------
 echo.
 
@@ -12,7 +12,7 @@ if errorlevel 1 ( echo ICON GENERATION FAILED & exit /b 1 )
 
 echo.
 echo [2/3] Building plugin...
-dotnet build NoiseFacadeGH.csproj -c Release
+dotnet build Manta.csproj -c Release
 if errorlevel 1 ( echo BUILD FAILED & exit /b 1 )
 
 echo.
@@ -28,8 +28,7 @@ echo.
 echo  Done!  Manta.gha installed to:
 echo  %APPDATA%\Grasshopper\Libraries\
 echo.
-echo  Restart Rhino.  Components appear under Analysis:
-echo    Acoustic:    BT Source  BT Mesh   BT Noise
-echo                 BT Interior  BT Contours  BT Legend
-echo    Environment: MN Wind   MN Sun    MN Pressure
+echo  Restart Rhino.  Components appear on the Manta tab:
+echo    Acoustic:    Source  Mesh  Noise  Interior  Contours  Legend
+echo    Environment: Wind  Sun  Pressure
 echo.

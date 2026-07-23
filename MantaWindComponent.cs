@@ -11,6 +11,7 @@ namespace Manta
     {
         // ── Volatile animation state ──────────────────────────────────────────
         volatile bool      _alive;
+        volatile bool      _animate = true;
         Thread             _thread;
         DateTime           _start = DateTime.Now;
 
@@ -27,11 +28,11 @@ namespace Manta
         volatile Polyline[] _streamlines;
 
         public MantaWindComponent()
-            : base("MN Wind", "MN Wnd",
+            : base("Wind", "Wind",
                    "Animated wind streamlines — particles advect through a curl-noise velocity field.\n" +
                    "Set Rhino viewport to Perspective for best effect.\n" +
                    "Formula: v = V_wind + curl(N(x/scale + t·0.1, y/scale, z/scale)) × turbulence",
-                   "Analysis", "Environment")
+                   "Manta", "Environment")
         { }
 
         public override Guid ComponentGuid => new Guid("C3D4E5F6-A7B8-4012-9CDE-123456789012");
@@ -39,7 +40,7 @@ namespace Manta
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
-            p.AddMeshParameter   ("Mesh",       "M",  "Analysis mesh (e.g. from MN Mesh)",           GH_ParamAccess.item);
+            p.AddMeshParameter   ("Mesh",       "M",  "Analysis mesh (e.g. from Manta Mesh)",        GH_ParamAccess.item);
             p.AddVectorParameter ("Wind Dir",   "V",  "Wind direction vector (will be normalised)",   GH_ParamAccess.item, new Vector3d(1, 0, 0));
             p.AddNumberParameter ("Speed",      "Sp", "Wind speed — controls animation rate",         GH_ParamAccess.item, 5.0);
             p.AddNumberParameter ("Turbulence", "Tu", "Curl-noise turbulence intensity (0 = laminar)", GH_ParamAccess.item, 1.5);
@@ -47,7 +48,8 @@ namespace Manta
             p.AddIntegerParameter("Particles",  "N",  "Number of streamline particles",               GH_ParamAccess.item, 80);
             p.AddIntegerParameter("Trail",      "Tr", "Trail length (steps)",                         GH_ParamAccess.item, 20);
             p.AddIntegerParameter("Seed",       "S",  "Random seed for particle placement",           GH_ParamAccess.item, 0);
-            for (int i = 0; i < 8; i++) p[i].Optional = true;
+            p.AddBooleanParameter("On",         "On", "Animate live in the viewport (off = compute outputs only, no 60 fps redraw loop)", GH_ParamAccess.item, true);
+            for (int i = 0; i < 9; i++) p[i].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -62,6 +64,7 @@ namespace Manta
             var     dir    = new Vector3d(1, 0, 0);
             double  speed  = 5, turb = 1.5, scale = 10;
             int     nPart  = 80, trail = 20, seed = 0;
+            bool    on     = true;
 
             if (!DA.GetData(0, ref mesh) || mesh == null)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No mesh"); return; }
@@ -69,7 +72,8 @@ namespace Manta
             DA.GetData(1, ref dir);   DA.GetData(2, ref speed);
             DA.GetData(3, ref turb);  DA.GetData(4, ref scale);
             DA.GetData(5, ref nPart); DA.GetData(6, ref trail);
-            DA.GetData(7, ref seed);
+            DA.GetData(7, ref seed);   DA.GetData(8, ref on);
+            _animate = on;
 
             nPart = Math.Max(1, Math.Min(500, nPart));
             trail = Math.Max(2, Math.Min(100, trail));
@@ -120,7 +124,8 @@ namespace Manta
             DA.SetDataList(0, new List<Curve>(Array.ConvertAll(sls, sl => (Curve)sl.ToNurbsCurve())));
             DA.SetDataList(1, fieldVecs);
 
-            StartThread();
+            if (_animate) StartThread();
+            else Rhino.RhinoDoc.ActiveDoc?.Views.Redraw(); // clear last frame when switched off
         }
 
         // ── Animation thread ──────────────────────────────────────────────────
@@ -133,7 +138,7 @@ namespace Manta
             {
                 while (_alive)
                 {
-                    Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
+                    if (_animate) Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
                     Thread.Sleep(16); // ~60 fps
                 }
             }) { IsBackground = true, Name = "MantaWind" };
@@ -149,6 +154,7 @@ namespace Manta
         // ── Viewport drawing ──────────────────────────────────────────────────
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
+            if (!_animate) return;
             var    seeds  = _seeds;
             if (seeds == null) return;
 

@@ -1,11 +1,11 @@
-// Bat GH — Battle Tests
+// Manta Ray — math tests
 // Standalone, no Rhino/GH dependency.
-// Reproduces BatAcoustics.cs math inline; runs as plain console app.
+// Reproduces MantaAcoustics.cs math inline; runs as plain console app.
 
 using System;
 using System.Drawing;
 
-// ── Self-contained acoustic math (mirrors BatAcoustics.cs exactly) ───────────
+// ── Self-contained acoustic math (mirrors MantaAcoustics.cs exactly) ─────────
 static class AM
 {
     public const double MinDist = 0.1;
@@ -195,7 +195,7 @@ class Program
     {
         Banner("Gradient colour — blue → cyan → yellow → orange → red");
 
-        // Keyframe stops (exact values from BatAcoustics.cs)
+        // Keyframe stops (exact values from MantaAcoustics.cs)
         RGB("t=0.00 → pure blue",   AM.GradientColor(0.00),   0,   0, 255);
         RGB("t=0.25 → cyan",        AM.GradientColor(0.25),   0, 220, 255);
         RGB("t=0.50 → yellow",      AM.GradientColor(0.50), 255, 240,   0);
@@ -382,7 +382,7 @@ class Program
     // ── Main ──────────────────────────────────────────────────────────────────
     static void Main()
     {
-        Console.WriteLine("\n  Bat GH — Battle Tests");
+        Console.WriteLine("\n  Manta Ray — math tests");
         Console.WriteLine("  " + new string('═', 58));
 
         TestDirectDb();

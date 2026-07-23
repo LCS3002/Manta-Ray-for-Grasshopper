@@ -10,6 +10,7 @@ namespace Manta
     public class MantaSunComponent : GH_Component
     {
         volatile bool   _alive;
+        volatile bool   _animate = true;
         Thread          _thread;
         DateTime        _start = DateTime.Now;
 
@@ -22,11 +23,12 @@ namespace Manta
         BoundingBox _bbox;
 
         public MantaSunComponent()
-            : base("MN Sun", "MN Sun",
-                   "Animated solar path with real-time shadow sweep.\n" +
+            : base("Sun", "Sun",
+                   "Animated solar path with real-time solar-incidence sweep across the mesh.\n" +
                    "Uses NOAA SPA algorithm — accurate to ±0.01° for 2000-2050.\n" +
-                   "Connect to MN Mesh for direct integration with noise analysis.",
-                   "Analysis", "Environment")
+                   "Face lighting is surface incidence (orientation), not cast-shadow occlusion.\n" +
+                   "Connect to Manta Mesh for direct integration with noise analysis.",
+                   "Manta", "Environment")
         { }
 
         public override Guid ComponentGuid => new Guid("D4E5F6A7-B8C9-4123-ADEF-234567890123");
@@ -43,7 +45,8 @@ namespace Manta
             p.AddNumberParameter ("Start Hr",  "H0",  "Analysis start (UTC hours, e.g. 6)",              GH_ParamAccess.item,  6.0);
             p.AddNumberParameter ("End Hr",    "H1",  "Analysis end   (UTC hours, e.g. 20)",             GH_ParamAccess.item, 20.0);
             p.AddNumberParameter ("Anim Spd",  "As",  "Animation speed multiplier (1 = real-time × 600)", GH_ParamAccess.item,  1.0);
-            for (int i = 0; i < 9; i++) p[i].Optional = true;
+            p.AddBooleanParameter("On",        "On",  "Animate live in the viewport (off = compute outputs only, no 60 fps redraw loop)", GH_ParamAccess.item, true);
+            for (int i = 0; i < 10; i++) p[i].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -61,6 +64,7 @@ namespace Manta
             Mesh   mesh = null;
             double lat = 51.5, lon = -0.1, h0 = 6, h1 = 20, aspd = 1.0;
             int    yr = 2026, mo = 6, dy = 21;
+            bool   on  = true;
 
             if (!DA.GetData(0, ref mesh) || mesh == null)
             { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No mesh"); return; }
@@ -68,6 +72,8 @@ namespace Manta
             DA.GetData(1, ref lat);  DA.GetData(2, ref lon);
             DA.GetData(3, ref yr);   DA.GetData(4, ref mo);  DA.GetData(5, ref dy);
             DA.GetData(6, ref h0);   DA.GetData(7, ref h1);  DA.GetData(8, ref aspd);
+            DA.GetData(9, ref on);
+            _animate = on;
 
             mo = Math.Max(1, Math.Min(12, mo));
             dy = Math.Max(1, Math.Min(31, dy));
@@ -124,7 +130,8 @@ namespace Manta
             DA.SetDataList(4, midFrac);
             DA.SetDataList(5, peakHours);
 
-            StartThread();
+            if (_animate) StartThread();
+            else Rhino.RhinoDoc.ActiveDoc?.Views.Redraw(); // clear last frame when switched off
         }
 
         void StartThread()
@@ -136,7 +143,7 @@ namespace Manta
             {
                 while (_alive)
                 {
-                    Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
+                    if (_animate) Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
                     Thread.Sleep(16);
                 }
             }) { IsBackground = true, Name = "MantaSun" };
@@ -151,6 +158,7 @@ namespace Manta
 
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
+            if (!_animate) return;
             var mesh = _mesh;
             if (mesh == null) return;
 
@@ -213,6 +221,7 @@ namespace Manta
 
         public override void DrawViewportMeshes(IGH_PreviewArgs args)
         {
+            if (!_animate) return;
             var mesh = _mesh;
             if (mesh == null) return;
 

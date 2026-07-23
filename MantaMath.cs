@@ -4,7 +4,7 @@ using Rhino.Geometry;
 
 namespace Manta
 {
-    // ── Shared math for all Manta Engine components ───────────────────────────
+    // ── Shared math for all Manta Ray components ──────────────────────────────
     static class MantaMath
     {
         // ── Curl noise for organic-looking streamlines ────────────────────────
@@ -206,7 +206,7 @@ namespace Manta
             return result;
         }
 
-        // ── Acoustic pressure (matches Bat GH formula) ───────────────────────
+        // ── Acoustic pressure (matches Manta acoustic formula) ───────────────
         public static double PressureDb(Point3d pt, Point3d src, double level)
         {
             double d = Math.Max(pt.DistanceTo(src), 0.1);

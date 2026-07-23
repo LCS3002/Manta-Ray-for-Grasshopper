@@ -7,18 +7,18 @@ using Rhino.Geometry;
 
 namespace Manta
 {
-    public class BatLegendComponent : GH_Component
+    public class MantaLegendComponent : GH_Component
     {
         private Mesh          _barMesh;
         private List<Point3d> _tickPts    = new List<Point3d>();
         private List<string>  _tickLabels = new List<string>();
         private double        _textSize   = 0.5;
 
-        public BatLegendComponent()
-            : base("MN Legend", "MN Leg",
+        public MantaLegendComponent()
+            : base("Legend", "Legend",
                    "Draw a dB colour-scale legend in the Rhino viewport.\n" +
-                   "Position with Origin; connect Min/Max from MN Noise.",
-                   "Analysis", "Acoustic")
+                   "Position with Origin; connect Min/Max from Manta Noise.",
+                   "Manta", "Acoustic")
         { }
 
         public override Guid ComponentGuid => new Guid("66778899-AABB-4233-DDEE-FF0011223345");
@@ -27,8 +27,8 @@ namespace Manta
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
             p.AddPointParameter ("Origin", "O",   "Base-left corner of the legend in world space", GH_ParamAccess.item, new Point3d(0,0,0));
-            p.AddNumberParameter("Min dB", "Min", "Scale minimum from MN Noise",                   GH_ParamAccess.item, 40.0);
-            p.AddNumberParameter("Max dB", "Max", "Scale maximum from MN Noise",                   GH_ParamAccess.item, 80.0);
+            p.AddNumberParameter("Min dB", "Min", "Scale minimum from Manta Noise",                   GH_ParamAccess.item, 40.0);
+            p.AddNumberParameter("Max dB", "Max", "Scale maximum from Manta Noise",                   GH_ParamAccess.item, 80.0);
             p.AddNumberParameter("Height", "H",   "Bar height in model units (default 5)",         GH_ParamAccess.item, 5.0);
             p.AddNumberParameter("Width",  "W",   "Bar width in model units (default 1)",          GH_ParamAccess.item, 1.0);
             p.AddIntegerParameter("Ticks", "T",   "Number of tick labels (default 5)",             GH_ParamAccess.item, 5);

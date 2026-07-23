@@ -9,8 +9,7 @@
     <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <!-- exclude old monolith and sub-projects -->
-    <Compile Remove="NoiseFacadeComponent.cs" />
+    <!-- exclude standalone sub-projects (icon generator + math tests) -->
     <Compile Remove="MathTest\**\*" />
     <Compile Remove="GenerateIcon\**\*" />
     <EmbeddedResource Remove="MathTest\**\*" />
@@ -21,12 +20,12 @@
   <ItemGroup>
     <EmbeddedResource Include="Manta_24.png" />
     <EmbeddedResource Include="Manta_48.png" />
-    <EmbeddedResource Include="BatSource_24.png" />
-    <EmbeddedResource Include="BatMesh_24.png" />
-    <EmbeddedResource Include="BatNoise_24.png" />
-    <EmbeddedResource Include="BatInterior_24.png" />
-    <EmbeddedResource Include="BatContours_24.png" />
-    <EmbeddedResource Include="BatLegend_24.png" />
+    <EmbeddedResource Include="MantaSource_24.png" />
+    <EmbeddedResource Include="MantaMesh_24.png" />
+    <EmbeddedResource Include="MantaNoise_24.png" />
+    <EmbeddedResource Include="MantaInterior_24.png" />
+    <EmbeddedResource Include="MantaContours_24.png" />
+    <EmbeddedResource Include="MantaLegend_24.png" />
     <EmbeddedResource Include="MantaWind_24.png" />
     <EmbeddedResource Include="MantaSun_24.png" />
     <EmbeddedResource Include="MantaPressure_24.png" />

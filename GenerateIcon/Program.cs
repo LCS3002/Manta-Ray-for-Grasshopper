@@ -5,11 +5,10 @@ using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.IO;
 
-// Manta — icon generator.
+// Manta Ray — icon generator.
 // Assembly icons (manta ray, teal): Manta_24.png, Manta_48.png
-// BT acoustic icons (amber on navy): BatSource, BatMesh, BatNoise, BatInterior, BatContours, BatLegend
-// MN environment icons (teal on navy): MantaWind, MantaSun, MantaPressure
-// Logo (512px): Manta_logo.png
+// Acoustic icons (amber on navy): MantaSource, MantaMesh, MantaNoise, MantaInterior, MantaContours, MantaLegend
+// Environment icons (teal on navy): MantaWind, MantaSun, MantaPressure
 class Program
 {
     // ── Palettes ──────────────────────────────────────────────────────────────
@@ -119,7 +118,7 @@ class Program
         });
     }
 
-    // ── MN Wind: curl-noise streamlines + arrow ───────────────────────────────
+    // ── Wind: curl-noise streamlines + arrow ──────────────────────────────────
     static Bitmap DrawWind(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -159,7 +158,7 @@ class Program
         });
     }
 
-    // ── MN Sun: sun disc + radiating rays ─────────────────────────────────────
+    // ── Sun: sun disc + radiating rays ────────────────────────────────────────
     static Bitmap DrawSun(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -206,7 +205,7 @@ class Program
         });
     }
 
-    // ── MN Pressure: source dot + expanding arcs ──────────────────────────────
+    // ── Pressure: source dot + expanding arcs ─────────────────────────────────
     static Bitmap DrawPressure(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -247,7 +246,7 @@ class Program
         });
     }
 
-    // ── BT Source: speaker cone + sound waves ─────────────────────────────────
+    // ── Source: speaker cone + sound waves ────────────────────────────────────
     static Bitmap DrawSource(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -272,7 +271,7 @@ class Program
         });
     }
 
-    // ── BT Mesh: vertex-grid icon ─────────────────────────────────────────────
+    // ── Mesh: vertex-grid icon ────────────────────────────────────────────────
     static Bitmap DrawMesh(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -302,7 +301,7 @@ class Program
         });
     }
 
-    // ── BT Noise: gradient heat-map bars ──────────────────────────────────────
+    // ── Noise: gradient heat-map bars ─────────────────────────────────────────
     static Bitmap DrawNoise(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -325,7 +324,7 @@ class Program
         });
     }
 
-    // ── BT Interior: room + rays + interior point ─────────────────────────────
+    // ── Interior: room + rays + interior point ────────────────────────────────
     static Bitmap DrawInterior(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -355,7 +354,7 @@ class Program
         });
     }
 
-    // ── BT Contours: concentric isodecibel lines ──────────────────────────────
+    // ── Contours: concentric isodecibel lines ─────────────────────────────────
     static Bitmap DrawContours(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -376,7 +375,7 @@ class Program
         });
     }
 
-    // ── BT Legend: vertical gradient bar + ticks ─────────────────────────────
+    // ── Legend: vertical gradient bar + ticks ─────────────────────────────────
     static Bitmap DrawLegend(int sz)
     {
         return Canvas(sz, (g, s) =>
@@ -537,7 +536,7 @@ class Program
         string outDir = Path.GetFullPath(
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, @"..\..\..\..\"));
 
-        Console.WriteLine($"\n  Manta — icon generator");
+        Console.WriteLine($"\n  Manta Ray — icon generator");
         Console.WriteLine($"  output → {outDir}");
         Console.WriteLine();
 
@@ -545,21 +544,18 @@ class Program
         Save(DrawManta(24),    outDir, "Manta_24.png");
         Save(DrawManta(48),    outDir, "Manta_48.png");
 
-        // BT acoustic component icons — amber
-        Save(DrawSource(24),   outDir, "BatSource_24.png");
-        Save(DrawMesh(24),     outDir, "BatMesh_24.png");
-        Save(DrawNoise(24),    outDir, "BatNoise_24.png");
-        Save(DrawInterior(24), outDir, "BatInterior_24.png");
-        Save(DrawContours(24), outDir, "BatContours_24.png");
-        Save(DrawLegend(24),   outDir, "BatLegend_24.png");
+        // Acoustic component icons — amber
+        Save(DrawSource(24),   outDir, "MantaSource_24.png");
+        Save(DrawMesh(24),     outDir, "MantaMesh_24.png");
+        Save(DrawNoise(24),    outDir, "MantaNoise_24.png");
+        Save(DrawInterior(24), outDir, "MantaInterior_24.png");
+        Save(DrawContours(24), outDir, "MantaContours_24.png");
+        Save(DrawLegend(24),   outDir, "MantaLegend_24.png");
 
-        // MN environment component icons — teal
+        // Environment component icons — teal
         Save(DrawWind(24),     outDir, "MantaWind_24.png");
         Save(DrawSun(24),      outDir, "MantaSun_24.png");
         Save(DrawPressure(24), outDir, "MantaPressure_24.png");
-
-        // Logo
-        Save(DrawLogo(512),    outDir, "Manta_logo.png");
 
         Console.WriteLine("\n  Done.");
     }

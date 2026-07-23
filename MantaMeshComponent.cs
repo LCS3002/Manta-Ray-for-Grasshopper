@@ -5,14 +5,14 @@ using Rhino.Geometry;
 
 namespace Manta
 {
-    public class BatMeshComponent : GH_Component
+    public class MantaMeshComponent : GH_Component
     {
-        public BatMeshComponent()
-            : base("MN Mesh", "MN Msh",
+        public MantaMeshComponent()
+            : base("Mesh", "Mesh",
                    "Convert any geometry to a Manta analysis mesh.\n" +
                    "Supports Mesh, Surface, Brep, SubD and Extrusion.\n" +
                    "Outputs normals-ready mesh, face count and total area.",
-                   "Analysis", "Acoustic")
+                   "Manta", "Acoustic")
         { }
 
         public override Guid ComponentGuid => new Guid("22334455-6677-4889-99AA-BBCCDDEEFF01");
@@ -27,7 +27,7 @@ namespace Manta
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
-            p.AddMeshParameter  ("Mesh",      "M",  "Analysis mesh → MN Noise / MN Contours",         GH_ParamAccess.item);
+            p.AddMeshParameter  ("Mesh",      "M",  "Analysis mesh → Manta Noise / Manta Contours",   GH_ParamAccess.item);
             p.AddIntegerParameter("Face Count","FC", "Number of mesh faces",                            GH_ParamAccess.item);
             p.AddNumberParameter ("Area",     "A",  "Total surface area (model units²)",               GH_ParamAccess.item);
         }

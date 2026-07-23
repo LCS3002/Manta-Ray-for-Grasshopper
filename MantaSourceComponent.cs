@@ -6,13 +6,13 @@ using Rhino.Geometry;
 
 namespace Manta
 {
-    public class BatSourceComponent : GH_Component
+    public class MantaSourceComponent : GH_Component
     {
-        public BatSourceComponent()
-            : base("MN Source", "MN Src",
+        public MantaSourceComponent()
+            : base("Source", "Source",
                    "Define acoustic noise sources — point sources and/or line sources (rail track, road).\n" +
                    "Line sources are subdivided into N equal-power sub-points: L_sub = L_total − 10·log10(N).",
-                   "Analysis", "Acoustic")
+                   "Manta", "Acoustic")
         { }
 
         public override Guid ComponentGuid => new Guid("11223344-5566-4778-8899-AABBCCDDEEF0");
@@ -34,8 +34,8 @@ namespace Manta
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
-            p.AddPointParameter ("Sources","S",  "All source positions (flat list) → MN Noise",   GH_ParamAccess.list);
-            p.AddNumberParameter("Levels", "dB", "Matched dB levels → MN Noise",                  GH_ParamAccess.list);
+            p.AddPointParameter ("Sources","S",  "All source positions (flat list) → Manta Noise",   GH_ParamAccess.list);
+            p.AddNumberParameter("Levels", "dB", "Matched dB levels → Manta Noise",                  GH_ParamAccess.list);
             p.AddIntegerParameter("Count", "N",  "Total number of source sub-points",              GH_ParamAccess.item);
         }
 

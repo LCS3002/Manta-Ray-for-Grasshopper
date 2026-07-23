@@ -10,6 +10,7 @@ namespace Manta
     public class MantaPressureComponent : GH_Component
     {
         volatile bool   _alive;
+        volatile bool   _animate = true;
         Thread          _thread;
         DateTime        _start = DateTime.Now;
 
@@ -20,11 +21,11 @@ namespace Manta
         BoundingBox _bbox;
 
         public MantaPressureComponent()
-            : base("MN Pressure", "MN Pre",
+            : base("Pressure", "Pressure",
                    "Animated acoustic pressure wavefronts radiating from noise sources.\n" +
                    "Visualises how sound energy propagates outward in time.\n" +
-                   "Pairs with MN Noise — use the same sources for integrated analysis.",
-                   "Analysis", "Environment")
+                   "Pairs with Manta Noise — use the same sources for integrated analysis.",
+                   "Manta", "Environment")
         { }
 
         public override Guid ComponentGuid => new Guid("E5F6A7B8-C9D0-4234-BCEF-345678901234");
@@ -32,12 +33,13 @@ namespace Manta
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
-            p.AddPointParameter  ("Sources",    "S",  "Noise source points (from MN Source)",       GH_ParamAccess.list);
-            p.AddNumberParameter ("Levels",     "dB", "dB levels per source (from MN Source)",       GH_ParamAccess.list);
+            p.AddPointParameter  ("Sources",    "S",  "Noise source points (from Manta Source)",       GH_ParamAccess.list);
+            p.AddNumberParameter ("Levels",     "dB", "dB levels per source (from Manta Source)",       GH_ParamAccess.list);
             p.AddNumberParameter ("Wave Speed", "c",  "Speed of sound in m/s (default 343)",         GH_ParamAccess.item, 343.0);
             p.AddNumberParameter ("Scale",      "Sc", "Visual scale — shrinks radius for display",   GH_ParamAccess.item, 0.05);
             p.AddIntegerParameter("Rings",      "R",  "Wavefront rings per source",                  GH_ParamAccess.item, 5);
-            for (int i = 0; i < 5; i++) p[i].Optional = true;
+            p.AddBooleanParameter("On",         "On", "Animate live in the viewport (off = compute outputs only, no 60 fps redraw loop)", GH_ParamAccess.item, true);
+            for (int i = 0; i < 6; i++) p[i].Optional = true;
         }
 
         protected override void RegisterOutputParams(GH_OutputParamManager p)
@@ -52,12 +54,15 @@ namespace Manta
             var   lvlList  = new List<double>();
             double speed   = 343, sc = 0.05;
             int    rings   = 5;
+            bool   on      = true;
 
             if (!DA.GetDataList(0, srcList) || srcList.Count == 0)
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No sources — connect MN Source"); return; }
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No sources — connect Manta Source"); return; }
 
             DA.GetDataList(1, lvlList);
             DA.GetData(2, ref speed); DA.GetData(3, ref sc); DA.GetData(4, ref rings);
+            DA.GetData(5, ref on);
+            _animate = on;
 
             while (lvlList.Count < srcList.Count) lvlList.Add(lvlList.Count > 0 ? lvlList[lvlList.Count-1] : 80);
 
@@ -74,7 +79,8 @@ namespace Manta
             DA.SetDataList(0, lvlList);
             DA.SetDataList(1, srcList);
 
-            StartThread();
+            if (_animate) StartThread();
+            else Rhino.RhinoDoc.ActiveDoc?.Views.Redraw(); // clear last frame when switched off
         }
 
         void StartThread()
@@ -86,7 +92,7 @@ namespace Manta
             {
                 while (_alive)
                 {
-                    Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
+                    if (_animate) Rhino.RhinoDoc.ActiveDoc?.Views.Redraw();
                     Thread.Sleep(16);
                 }
             }) { IsBackground = true, Name = "MantaPressure" };
@@ -101,6 +107,7 @@ namespace Manta
 
         public override void DrawViewportWires(IGH_PreviewArgs args)
         {
+            if (!_animate) return;
             var srcs   = _sources;
             var lvls   = _levels;
             if (srcs == null || srcs.Length == 0) return;

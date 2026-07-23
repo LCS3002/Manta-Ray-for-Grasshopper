@@ -7,16 +7,16 @@ using Rhino.Geometry;
 
 namespace Manta
 {
-    public class BatNoiseComponent : GH_Component
+    public class MantaNoiseComponent : GH_Component
     {
         private volatile Mesh _display;
 
-        public BatNoiseComponent()
-            : base("MN Noise", "MN Nse",
+        public MantaNoiseComponent()
+            : base("Noise", "Noise",
                    "Core acoustic analysis — direct + optional first-order reflections.\n" +
                    "Paints blue→red heat-map. Enable compliance overlay with Limit dB.\n" +
                    "Formula: L = L_src − 20·log10(d) − 11 + 10·log10(cosθ + 0.01)",
-                   "Analysis", "Acoustic")
+                   "Manta", "Acoustic")
         { }
 
         public override Guid ComponentGuid => new Guid("33445566-7788-4900-AABB-CCDDEEFF0012");
@@ -24,9 +24,9 @@ namespace Manta
 
         protected override void RegisterInputParams(GH_InputParamManager p)
         {
-            p.AddMeshParameter   ("Mesh",       "M",   "Analysis mesh from MN Mesh",                                           GH_ParamAccess.item);
-            p.AddPointParameter  ("Sources",    "S",   "Source points from MN Source",                                         GH_ParamAccess.list);
-            p.AddNumberParameter ("Levels",     "dB",  "dB levels from MN Source",                                             GH_ParamAccess.list);
+            p.AddMeshParameter   ("Mesh",       "M",   "Analysis mesh from Manta Mesh",                                        GH_ParamAccess.item);
+            p.AddPointParameter  ("Sources",    "S",   "Source points from Manta Source",                                      GH_ParamAccess.list);
+            p.AddNumberParameter ("Levels",     "dB",  "dB levels from Manta Source",                                          GH_ParamAccess.list);
             p.AddNumberParameter ("Min dB",     "Min", "Pin lower bound of colour scale (auto if omitted)",                     GH_ParamAccess.item);
             p.AddNumberParameter ("Max dB",     "Max", "Pin upper bound of colour scale (auto if omitted)",                     GH_ParamAccess.item);
             p.AddBooleanParameter("Reflections","R",   "Enable first-order acoustic reflections",                              GH_ParamAccess.item, false);
@@ -44,9 +44,9 @@ namespace Manta
         protected override void RegisterOutputParams(GH_OutputParamManager p)
         {
             p.AddMeshParameter  ("Mesh",         "M",   "Vertex-coloured facade mesh",                              GH_ParamAccess.item);
-            p.AddNumberParameter("Face dB",      "dB",  "Per-face total dB → MN Interior / MN Contours",           GH_ParamAccess.list);
-            p.AddNumberParameter("Min dB",       "Min", "Colour-scale minimum → MN Legend",                        GH_ParamAccess.item);
-            p.AddNumberParameter("Max dB",       "Max", "Colour-scale maximum → MN Legend",                        GH_ParamAccess.item);
+            p.AddNumberParameter("Face dB",      "dB",  "Per-face total dB → Manta Interior / Manta Contours",     GH_ParamAccess.list);
+            p.AddNumberParameter("Min dB",       "Min", "Colour-scale minimum → Manta Legend",                        GH_ParamAccess.item);
+            p.AddNumberParameter("Max dB",       "Max", "Colour-scale maximum → Manta Legend",                        GH_ParamAccess.item);
             p.AddNumberParameter("Exceeded m²",  "ExA", "Facade area exceeding Limit dB (m²)",                     GH_ParamAccess.item);
             p.AddNumberParameter("% Exceeded",   "Ex%", "Percentage of facade area exceeding Limit dB",            GH_ParamAccess.item);
             p.AddMeshParameter  ("Reflect Mesh", "RM",  "False-colour mesh of first-order reflection hotspots",    GH_ParamAccess.item);
@@ -66,11 +66,11 @@ namespace Manta
             double  limitDb    = double.NaN;
 
             if (!DA.GetData    (0, ref mesh)  || mesh == null)
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No mesh — connect MN Mesh"); return; }
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No mesh — connect Manta Mesh"); return; }
             if (!DA.GetDataList(1, sources)   || sources.Count == 0)
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No sources — connect MN Source"); return; }
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No sources — connect Manta Source"); return; }
             if (!DA.GetDataList(2, levels)    || levels.Count == 0)
-            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No levels — connect MN Source"); return; }
+            { AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "No levels — connect Manta Source"); return; }
 
             bool hasMin   = DA.GetData    (3, ref userMin);
             bool hasMax   = DA.GetData    (4, ref userMax);
